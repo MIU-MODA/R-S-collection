@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSBooks — Inventario R&S Collection</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --gold:#c9a84c;--gold-light:#e8d48b;--gold-dark:#a07d2e;--gold-glow:rgba(201,168,76,0.15);
+  --bg:#0a0a0a;--bg-card:#141414;--bg-elevated:#1a1a1a;--bg-input:#111;
+  --text:#f0ece4;--text-muted:#8a8478;--text-dim:#5a5650;
+  --border:#2a2620;--border-light:#3a3630;
+  --green:#5cb85c;--red:#d9534f;--accent:#c9a84c;
+  --radius:10px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* TABS */
+.tab-bar{display:flex;overflow-x:auto;background:var(--bg-card);border-bottom:1px solid var(--border);padding:0 8px;position:sticky;top:0;z-index:50;scrollbar-width:none;}
+.tab-bar::-webkit-scrollbar{display:none;}
+.tab{padding:12px 16px;color:var(--text-muted);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.3s;font-weight:500;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* PAGES */
+.page{display:none;padding:16px;max-width:900px;margin:0 auto;}
+.page.active{display:block;}
+
+/* HEADER */
+.app-header{text-align:center;padding:20px 16px 12px;background:linear-gradient(180deg,var(--bg-card) 0%,var(--bg) 100%);}
+.app-header img{width:120px;height:auto;border-radius:8px;margin-bottom:8px;}
+.app-header h1{font-family:'Cormorant Garamond',serif;font-size:1.6em;color:var(--gold);font-weight:600;letter-spacing:2px;}
+.app-header p{color:var(--text-muted);font-size:11px;letter-spacing:3px;font-weight:300;margin-top:2px;}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:16px 0;}
+.kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;}
+.kpi .label{font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.5px;}
+.kpi .value{font-family:'Cormorant Garamond',serif;font-size:1.5em;color:var(--gold);font-weight:600;}
+.kpi .sub{font-size:10px;color:var(--text-dim);margin-top:4px;}
+.kpi.inv .value{color:var(--gold-light);}
+.kpi.ven .value{color:var(--green);}
+.kpi.gan .value{color:var(--gold);}
+
+/* ALERTS */
+.alert-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin:12px 0;}
+.alert-section h3{font-size:13px;color:var(--gold);margin-bottom:8px;font-family:'Cormorant Garamond',serif;font-weight:600;letter-spacing:1px;}
+.alert-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.alert-item:last-child{border:none;}
+.alert-item .name{color:var(--text);}
+.alert-item .stock{color:var(--red);font-weight:600;}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:500px){.form-grid{grid-template-columns:1fr;}}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-group label{font-size:11px;color:var(--text-muted);letter-spacing:0.5px;}
+.form-group input,.form-group select,.form-group textarea{background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color 0.3s;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold);}
+.form-group select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a8478'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+.form-group select option{background:var(--bg-card);color:var(--text);}
+textarea{resize:vertical;min-height:60px;}
+.form-full{grid-column:1/-1;}
+.form-actions{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;margin-top:8px;}
+
+/* BUTTONS */
+.btn{padding:8px 18px;border-radius:20px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;transition:all 0.3s;}
+.btn-primary{background:var(--gold);color:#0a0a0a;}
+.btn-primary:hover{background:var(--gold-light);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-muted);}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-sm{padding:5px 12px;font-size:11px;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead{position:sticky;top:44px;z-index:5;}
+th{background:var(--bg-elevated);color:var(--gold);padding:10px 8px;text-align:left;font-weight:500;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:0.5px;}
+td{padding:8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+tr:hover{background:var(--gold-glow);}
+.archived{opacity:0.4;}
+
+/* PRODUCT LIST */
+.prod-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center;transition:border-color 0.3s;}
+.prod-card:hover{border-color:var(--gold-dark);}
+.prod-img{width:60px;height:60px;border-radius:8px;object-fit:cover;background:var(--bg-elevated);flex-shrink:0;}
+.prod-img-placeholder{width:60px;height:60px;border-radius:8px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.prod-info{flex:1;min-width:0;}
+.prod-name{font-weight:600;font-size:13px;color:var(--text);margin-bottom:2px;}
+.prod-meta{font-size:11px;color:var(--text-muted);}
+.prod-prices{display:flex;gap:12px;align-items:center;}
+.prod-price{font-family:'Cormorant Garamond',serif;font-size:1.1em;color:var(--gold);font-weight:600;}
+.prod-stock{font-size:12px;padding:2px 8px;border-radius:10px;font-weight:500;}
+.prod-stock.ok{background:rgba(92,184,92,0.15);color:var(--green);}
+.prod-stock.low{background:rgba(217,83,79,0.15);color:var(--red);}
+.prod-actions{display:flex;gap:6px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:100;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal-content{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;position:relative;}
+.modal-content h3{font-family:'Cormorant Garamond',serif;font-size:1.3em;color:var(--gold);margin-bottom:14px;font-weight:600;}
+.close-btn{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--text-muted);font-size:1.2em;cursor:pointer;}
+.close-btn:hover{color:var(--text);}
+
+/* SEARCH & FILTER */
+.search-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.search-bar input{flex:1;min-width:150px;background:var(--bg-input);border:1px solid var(--border);border-radius:20px;padding:8px 14px;color:var(--text);font-size:13px;outline:none;font-family:'Inter',sans-serif;}
+.search-bar input:focus{border-color:var(--gold);}
+.search-bar select{background:var(--bg-input);border:1px solid var(--border);border-radius:20px;padding:8px 12px;color:var(--text-muted);font-size:12px;outline:none;font-family:'Inter',sans-serif;appearance:none;}
+
+/* FOTO */
+.foto-area{display:flex;gap:10px;align-items:center;grid-column:1/-1;}
+.foto-preview{width:70px;height:70px;border-radius:8px;object-fit:cover;border:1px solid var(--border);background:var(--bg-elevated);}
+.foto-btns{display:flex;flex-direction:column;gap:4px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gold-dark);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:200;opacity:0;transition:all 0.4s;pointer-events:none;font-weight:500;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* CATEGORIES */
+.cat-list{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+.cat-tag{background:var(--bg-elevated);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;}
+.cat-tag .cat-count{background:var(--gold-glow);color:var(--gold);padding:1px 6px;border-radius:8px;font-size:10px;}
+.cat-tag .cat-del{cursor:pointer;color:var(--text-dim);font-size:14px;}
+.cat-tag .cat-del:hover{color:var(--red);}
+
+/* BACKUP */
+.backup-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:16px;}
+.backup-section h3{font-family:'Cormorant Garamond',serif;color:var(--gold);margin-bottom:10px;}
+
+/* RETIRO */
+.retiro-btn{margin-top:6px;padding:4px 10px;font-size:11px;background:var(--bg-elevated);color:var(--gold);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;}
+.retiro-btn:hover{border-color:var(--gold);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim);}
+
+/* FRAGRANCE TYPE BADGES */
+.frag-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;display:inline-block;}
+.frag-amaderada{background:rgba(139,90,43,0.2);color:#c8915a;}
+.frag-floral{background:rgba(200,100,150,0.2);color:#d4749a;}
+.frag-citrica{background:rgba(200,180,60,0.2);color:#c8b43c;}
+.frag-oriental{background:rgba(180,80,80,0.2);color:#c87050;}
+.frag-fresca{background:rgba(80,180,160,0.2);color:#50b4a0;}
+.frag-aromatica{background:rgba(100,160,80,0.2);color:#6ab050;}
+.frag-acuatica{background:rgba(80,140,200,0.2);color:#508cc8;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <h1>R&S Collection</h1>
+  <p>INVENTARIO & GESTIÓN</p>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <div class="tab active" onclick="showPage('resumen')">📊 Resumen</div>
+  <div class="tab" onclick="showPage('productos')">🧴 Perfumes</div>
+  <div class="tab" onclick="showPage('venta')">💰 Venta</div>
+  <div class="tab" onclick="showPage('historial')">📋 Historial</div>
+  <div class="tab" onclick="showPage('categorias')">🏷️ Categorías</div>
+</div>
+
+<!-- RESUMEN -->
+<div class="page active" id="page-resumen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <h2 style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-weight:600;">Dashboard</h2>
+    <select id="filtro-periodo" onchange="renderResumen()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text-muted);font-size:11px;outline:none;">
+      <option value="todo">Todo el tiempo</option>
+      <option value="hoy">Hoy</option>
+      <option value="semana">Esta semana</option>
+      <option value="mes">Este mes</option>
+    </select>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi inv"><div class="label">💎 Total Invertido</div><div class="value" id="kpi-inv">S/ 0</div><div class="sub">capital en perfumes</div></div>
+    <div class="kpi ven"><div class="label">🛍️ Total Vendido</div><div class="value" id="kpi-ven">S/ 0</div><div class="sub">ingresos por ventas</div><div class="sub" id="kpi-retiros" style="color:var(--gold);font-size:10px;margin-top:2px;display:none">reinvertido: S/ 0</div><button class="retiro-btn" onclick="abrirModalRetiro()">💰 Retirar / Reinvertir</button></div>
+    <div class="kpi gan"><div class="label">✨ Ganancia</div><div class="value" id="kpi-gan">S/ 0</div><div class="sub" id="kpi-margen">margen: 0%</div></div>
+    <div class="kpi"><div class="label">📦 Perfumes Activos</div><div class="value" id="kpi-stk" style="color:var(--text)">0</div><div class="sub" id="kpi-stk-val">valor inventario: S/ 0</div></div>
+  </div>
+  <div class="alert-section" id="alertas-stock">
+    <h3>⚠️ Stock Bajo (≤3 unidades)</h3>
+    <div id="alertas-list"><p style="color:var(--text-dim);font-size:12px;">Sin alertas</p></div>
+  </div>
+</div>
+
+<!-- PRODUCTOS -->
+<div class="page" id="page-productos">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <h2 style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-weight:600;">Perfumes</h2>
+    <button class="btn btn-primary" onclick="abrirModalProd()">+ Nuevo Perfume</button>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="buscar-prod" placeholder="Buscar perfume, marca..." oninput="renderProductos()">
+    <select id="filtro-cat" onchange="renderProductos()"><option value="">Todas</option></select>
+    <select id="filtro-genero" onchange="renderProductos()">
+      <option value="">Género</option>
+      <option value="Él">Para Él</option>
+      <option value="Ella">Para Ella</option>
+      <option value="Unisex">Unisex</option>
+    </select>
+  </div>
+  <div id="lista-productos"></div>
+</div>
+
+<!-- VENTA -->
+<div class="page" id="page-venta">
+  <h2 style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-weight:600;margin-bottom:12px;">Registrar Venta</h2>
+  <div class="form-grid">
+    <div class="form-group form-full">
+      <label>Perfume</label>
+      <select id="v-producto" onchange="onSelectVenta()"><option value="">Seleccionar perfume...</option></select>
+    </div>
+    <div class="form-group">
+      <label>Precio de venta</label>
+      <input type="number" id="v-precio" step="0.01" readonly>
+    </div>
+    <div class="form-group">
+      <label>Cantidad</label>
+      <input type="number" id="v-cantidad" value="1" min="1">
+    </div>
+    <div class="form-group form-full" id="v-info" style="display:none;background:var(--bg-elevated);padding:10px;border-radius:8px;">
+      <span style="font-size:12px;color:var(--text-muted);" id="v-info-text"></span>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="registrarVenta()">💰 Registrar Venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORIAL -->
+<div class="page" id="page-historial">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <h2 style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-weight:600;">Historial de Ventas</h2>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Fecha</th><th>Perfume</th><th>Cant</th><th>Ingreso</th><th>Ganancia</th><th></th></tr></thead>
+      <tbody id="historial-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CATEGORÍAS -->
+<div class="page" id="page-categorias">
+  <h2 style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-weight:600;margin-bottom:12px;">Categorías</h2>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <input type="text" id="nueva-cat" placeholder="Nueva categoría..." style="flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:20px;padding:8px 14px;color:var(--text);font-size:13px;outline:none;">
+    <button class="btn btn-primary" onclick="agregarCat()">+ Agregar</button>
+  </div>
+  <div class="cat-list" id="cat-list"></div>
+
+  <div class="backup-section">
+    <h3>📦 Respaldo de Datos</h3>
+    <p style="color:var(--text-muted);font-size:12px;margin-bottom:10px;">Exporta o importa tu inventario completo con fotos.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="exportarBackup()">⬇️ Backup completo (con fotos)</button>
+      <label class="btn btn-ghost" style="cursor:pointer;">⬆️ Restaurar backup<input type="file" accept=".json" onchange="importarBackup(event)" style="display:none;"></label>
+    </div>
+    <div id="backup-status" style="margin-top:8px;font-size:12px;"></div>
+  </div>
+
+  <div class="backup-section" style="margin-top:12px;border-color:var(--red);">
+    <h3 style="color:var(--red);">⚠️ Zona de Peligro</h3>
+    <button class="btn btn-danger btn-sm" onclick="resetearTodo()">🗑️ Borrar todos los datos</button>
+  </div>
+</div>
+
+<!-- MODAL PRODUCTO -->
+<div class="modal-overlay" id="modal-prod">
+  <div class="modal-content">
+    <button class="close-btn" onclick="cerrarModal('modal-prod')">✕</button>
+    <h3 id="modal-prod-title">Nuevo Perfume</h3>
+    <input type="hidden" id="e-id">
+    <div class="form-grid">
+      <div class="form-group form-full"><label>Nombre del perfume</label><input type="text" id="e-nombre" placeholder="Ej: Bleu de Parfum"></div>
+      <div class="form-group"><label>Marca</label><input type="text" id="e-marca" placeholder="Ej: R&S Collection"></div>
+      <div class="form-group"><label>Categoría</label><select id="e-categoria"></select></div>
+      <div class="form-group"><label>Género</label><select id="e-genero"><option value="Él">Para Él</option><option value="Ella">Para Ella</option><option value="Unisex">Unisex</option></select></div>
+      <div class="form-group"><label>Tipo de fragancia</label><select id="e-fragancia"><option value="">Seleccionar...</option><option value="Amaderada">Amaderada</option><option value="Floral">Floral</option><option value="Cítrica">Cítrica</option><option value="Oriental">Oriental</option><option value="Fresca">Fresca</option><option value="Aromática">Aromática</option><option value="Acuática">Acuática</option></select></div>
+      <div class="form-group"><label>Presentación</label><input type="text" id="e-presentacion" placeholder="Ej: 100ml" value="100ml"></div>
+      <div class="form-group"><label>Inspirado en (opcional)</label><input type="text" id="e-inspirado" placeholder="Ej: Sauvage Dior"></div>
+      <div class="form-group form-full"><label>Descripción</label><textarea id="e-descripcion" placeholder="Fragancia amaderada con notas de..."></textarea></div>
+      <div class="form-group"><label>Ideal para</label><input type="text" id="e-ideal" placeholder="Ej: Uso diario, eventos"></div>
+      <div class="form-group"><label>Stock</label><input type="number" id="e-stock" value="1" min="0"></div>
+      <div class="form-group"><label>Costo unitario (S/)</label><input type="number" id="e-costo" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="form-group"><label>Precio de venta (S/)</label><input type="number" id="e-pventa" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="foto-area">
+        <img id="e-foto-preview" class="foto-preview" src="" alt="" style="display:none;">
+        <div class="prod-img-placeholder" id="e-foto-placeholder">🧴</div>
+        <div class="foto-btns">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;">📷 Foto<input type="file" accept="image/*" onchange="cargarFoto(event,'editar')" style="display:none;"></label>
+          <button class="btn btn-ghost btn-sm" onclick="quitarFoto('editar')">✕ Quitar</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="cerrarModal('modal-prod')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-guardar-prod" onclick="guardarProducto()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RETIRO -->
+<div class="modal-overlay" id="modal-retiro">
+  <div class="modal-content" style="background:#fff;color:#222;border:1px solid #ddd;">
+    <button class="close-btn" onclick="cerrarModal('modal-retiro')" style="color:#888">✕</button>
+    <h3 style="color:#222">💰 Retirar para Reinversión</h3>
+    <p style="color:#777;font-size:13px;margin-bottom:12px">Registra el dinero que retiras para reinvertir.</p>
+    <div class="form-grid">
+      <div class="form-group"><label style="color:#555">Monto (S/)</label><input type="number" id="retiro-monto" step="0.01" min="0.01" placeholder="Ej: 150.00" style="background:#f5f5f5;color:#222;border-color:#ddd"></div>
+      <div class="form-group"><label style="color:#555">Motivo</label><input type="text" id="retiro-motivo" placeholder="Ej: Compra nuevo stock" style="background:#f5f5f5;color:#222;border-color:#ddd"></div>
+    </div>
+    <div id="retiro-historial" style="margin-top:12px;max-height:180px;overflow-y:auto;color:#222"></div>
+    <div class="form-actions"><button class="btn btn-ghost" onclick="cerrarModal('modal-retiro')" style="color:#666;border-color:#ccc">Cancelar</button><button class="btn btn-primary" onclick="registrarRetiro()">💰 Registrar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──
+const DEF_CATS=['COLECCIÓN PARA ÉL','COLECCIÓN PARA ELLA','NUESTROS PERFUMES'];
+function load(){
+  return {
+    categorias:JSON.parse(localStorage.getItem('rs_cats')||JSON.stringify(DEF_CATS)),
+    productos:JSON.parse(localStorage.getItem('rs_prods')||'[]'),
+    ventas:JSON.parse(localStorage.getItem('rs_ventas')||'[]'),
+    retiros:JSON.parse(localStorage.getItem('rs_retiros')||'[]')
+  };
+}
+function save(){
+  var prodsParaLS=D.productos.map(function(p){var c=Object.assign({},p);delete c.foto;return c;});
+  localStorage.setItem('rs_cats',JSON.stringify(D.categorias));
+  localStorage.setItem('rs_prods',JSON.stringify(prodsParaLS));
+  localStorage.setItem('rs_ventas',JSON.stringify(D.ventas));
+  localStorage.setItem('rs_retiros',JSON.stringify(D.retiros||[]));
+}
+let D=load();
+let tempFoto={nuevo:null,editar:undefined};
+let fotoDb=null;
+
+// ── IndexedDB for photos ──
+function abrirFotoDB(){return new Promise(function(resolve,reject){var r=indexedDB.open('RSFotosDB',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('fotos');};r.onsuccess=function(e){fotoDb=e.target.result;resolve();};r.onerror=function(){reject();};});}
+function saveConFoto(prodId,dataUrl){return new Promise(function(resolve){if(!fotoDb){resolve();return;}var tx=fotoDb.transaction('fotos','readwrite');tx.objectStore('fotos').put(dataUrl,prodId);tx.oncomplete=function(){save();resolve();};});}
+function getFoto(prodId){return new Promise(function(resolve){if(!fotoDb){resolve(null);return;}var tx=fotoDb.transaction('fotos','readonly');var r=tx.objectStore('fotos').get(prodId);r.onsuccess=function(){resolve(r.result||null);};r.onerror=function(){resolve(null);};});}
+function inyectarFotos(){var promises=D.productos.map(function(p){return getFoto(p.id).then(function(f){if(f)p.foto=f;});});return Promise.all(promises);}
+
+// ── UTILS ──
+function fmt(n){return'S/ '+n.toFixed(2);}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+function activos(){return D.productos.filter(function(p){return!p.archivado;});}
+
+// ── TABS ──
+function showPage(name){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('page-'+name).classList.add('active');
+  var tabs=document.querySelectorAll('.tab');
+  var map={resumen:0,productos:1,venta:2,historial:3,categorias:4};
+  if(map[name]!==undefined)tabs[map[name]].classList.add('active');
+  ({resumen:renderResumen,productos:function(){poblarSelects();renderProductos();},venta:function(){poblarSelects();},historial:renderHistorial,categorias:renderCategorias})[name]();
+}
+
+// ── MODAL ──
+function cerrarModal(id){document.getElementById(id).classList.remove('open');}
+
+// ── FILTER VENTAS ──
+function filtrarVentas(periodo){
+  if(periodo==='todo')return D.ventas;
+  var hoy=new Date();hoy.setHours(0,0,0,0);
+  var inicio;
+  if(periodo==='hoy')inicio=hoy;
+  else if(periodo==='semana'){inicio=new Date(hoy);inicio.setDate(inicio.getDate()-inicio.getDay());}
+  else if(periodo==='mes'){inicio=new Date(hoy.getFullYear(),hoy.getMonth(),1);}
+  return D.ventas.filter(function(v){return new Date(v.fecha)>=inicio;});
+}
+
+// ── RESUMEN ──
+function renderResumen(){
+  var periodo=document.getElementById('filtro-periodo').value;
+  var vf=filtrarVentas(periodo);var pr=activos();
+  var invTotal=D.productos.reduce(function(s,p){return s+p.costoUnitario*p.stockInicial;},0);
+  var venBruto=vf.reduce(function(s,v){return s+v.ingreso;},0);
+  var retTotal=(D.retiros||[]).reduce(function(s,r){return s+r.monto;},0);
+  var venTotal=venBruto-retTotal;
+  var ganTotal=vf.reduce(function(s,v){return s+v.ganancia;},0)-retTotal;
+  var margen=venBruto>0?((ganTotal/venBruto)*100).toFixed(1):0;
+  var valStock=pr.reduce(function(s,p){return s+p.stock*p.costoUnitario;},0);
+  document.getElementById('kpi-inv').textContent=fmt(invTotal);
+  document.getElementById('kpi-ven').textContent=fmt(venTotal);
+  document.getElementById('kpi-gan').textContent=fmt(ganTotal);
+  document.getElementById('kpi-margen').textContent='margen: '+margen+'%';
+  document.getElementById('kpi-stk').textContent=pr.length;
+  document.getElementById('kpi-stk-val').textContent='valor inventario: '+fmt(valStock);
+  var retEl=document.getElementById('kpi-retiros');
+  if(retTotal>0){retEl.style.display='block';retEl.textContent='reinvertido: '+fmt(retTotal);}else{retEl.style.display='none';}
+  // Alertas bajo stock
+  var bajos=pr.filter(function(p){return p.stock<=3&&p.stock>0;});
+  var al=document.getElementById('alertas-list');
+  if(bajos.length===0){al.innerHTML='<p style="color:var(--text-dim);font-size:12px;">Sin alertas</p>';}
+  else{al.innerHTML=bajos.map(function(p){return'<div class="alert-item"><span class="name">'+p.nombre+' ('+p.marca+')</span><span class="stock">'+p.stock+' uds</span></div>';}).join('');}
+}
+
+// ── SELECTS ──
+function poblarSelects(){
+  ['e-categoria','filtro-cat'].forEach(function(id){
+    var sel=document.getElementById(id);if(!sel)return;
+    var val=sel.value;sel.innerHTML=id==='filtro-cat'?'<option value="">Todas</option>':'';
+    D.categorias.forEach(function(c){sel.innerHTML+='<option value="'+c+'">'+c+'</option>';});
+    sel.value=val;
+  });
+  var vSel=document.getElementById('v-producto');
+  vSel.innerHTML='<option value="">Seleccionar perfume...</option>';
+  activos().filter(function(p){return p.stock>0;}).forEach(function(p){
+    vSel.innerHTML+='<option value="'+p.id+'">'+p.nombre+' ('+p.marca+') — Stock: '+p.stock+'</option>';
+  });
+}
+
+// ── PRODUCTOS ──
+function renderProductos(){
+  var q=(document.getElementById('buscar-prod').value||'').toLowerCase();
+  var cat=document.getElementById('filtro-cat').value;
+  var gen=document.getElementById('filtro-genero').value;
+  var list=activos().filter(function(p){
+    var matchQ=!q||p.nombre.toLowerCase().includes(q)||p.marca.toLowerCase().includes(q);
+    var matchC=!cat||p.categoria===cat;
+    var matchG=!gen||p.genero===gen;
+    return matchQ&&matchC&&matchG;
+  });
+  var html=list.map(function(p){
+    var fragClass=p.fragancia?'frag-'+p.fragancia.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace('í','i').replace('á','a'):'';
+    var imgHtml=p.foto?'<img class="prod-img" src="'+p.foto+'" alt="">':'<div class="prod-img-placeholder">🧴</div>';
+    var stockClass=p.stock<=3?'low':'ok';
+    var genIcon=p.genero==='Él'?'♂':'♀';
+    if(p.genero==='Unisex')genIcon='⚥';
+    return'<div class="prod-card">'+imgHtml+'<div class="prod-info"><div class="prod-name">'+p.nombre+'</div><div class="prod-meta">'+p.marca+' · '+genIcon+' '+p.genero+(p.fragancia?' · <span class="frag-badge '+fragClass+'">'+p.fragancia+'</span>':'')+(p.presentacion?' · '+p.presentacion:'')+'</div>'+(p.inspirado?'<div class="prod-meta" style="font-style:italic;">Inspirado en: '+p.inspirado+'</div>':'')+'</div><div class="prod-prices"><span class="prod-price">'+fmt(p.precioVenta)+'</span><span class="prod-stock '+stockClass+'">'+p.stock+'</span></div><div class="prod-actions"><button class="btn btn-ghost btn-sm" onclick="editarProd('+p.id+')">✏️</button><button class="btn btn-ghost btn-sm" onclick="archivar('+p.id+')">📦</button></div></div>';
+  }).join('');
+  document.getElementById('lista-productos').innerHTML=html||'<p style="color:var(--text-dim);text-align:center;padding:40px;">No se encontraron perfumes</p>';
+}
+
+// ── MODAL PRODUCTO ──
+function abrirModalProd(){
+  document.getElementById('modal-prod-title').textContent='Nuevo Perfume';
+  document.getElementById('e-id').value='';
+  ['e-nombre','e-marca','e-descripcion','e-ideal','e-inspirado'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('e-stock').value=1;
+  document.getElementById('e-costo').value='';
+  document.getElementById('e-pventa').value='';
+  document.getElementById('e-presentacion').value='100ml';
+  document.getElementById('e-genero').value='Él';
+  document.getElementById('e-fragancia').value='';
+  document.getElementById('e-categoria').value=D.categorias[0]||'';
+  document.getElementById('e-foto-preview').style.display='none';
+  document.getElementById('e-foto-placeholder').style.display='flex';
+  tempFoto.nuevo=null;tempFoto.editar=undefined;
+  document.getElementById('btn-guardar-prod').onclick=guardarNuevo;
+  document.getElementById('modal-prod').classList.add('open');
+}
+
+function guardarNuevo(){
+  var nombre=document.getElementById('e-nombre').value.trim();
+  if(!nombre){toast('⚠️ Ingresa el nombre');return;}
+  var p={
+    id:Date.now(),nombre:nombre,
+    marca:document.getElementById('e-marca').value.trim(),
+    categoria:document.getElementById('e-categoria').value,
+    genero:document.getElementById('e-genero').value,
+    fragancia:document.getElementById('e-fragancia').value,
+    presentacion:document.getElementById('e-presentacion').value.trim(),
+    inspirado:document.getElementById('e-inspirado').value.trim(),
+    descripcion:document.getElementById('e-descripcion').value.trim(),
+    ideal:document.getElementById('e-ideal').value.trim(),
+    stock:parseInt(document.getElementById('e-stock').value)||0,
+    stockInicial:parseInt(document.getElementById('e-stock').value)||0,
+    costoUnitario:parseFloat(document.getElementById('e-costo').value)||0,
+    precioVenta:parseFloat(document.getElementById('e-pventa').value)||0,
+    archivado:false,fecha:new Date().toISOString(),foto:tempFoto.nuevo||''
+  };
+  D.productos.push(p);
+  if(tempFoto.nuevo)saveConFoto(p.id,tempFoto.nuevo).then(function(){cerrarModal('modal-prod');poblarSelects();renderProductos();renderResumen();toast('✅ '+p.nombre+' agregado');});
+  else{save();cerrarModal('modal-prod');poblarSelects();renderProductos();renderResumen();toast('✅ '+p.nombre+' agregado');}
+}
+
+function editarProd(id){
+  var p=D.productos.find(function(x){return x.id===id;});if(!p)return;
+  document.getElementById('modal-prod-title').textContent='Editar Perfume';
+  document.getElementById('e-id').value=p.id;
+  document.getElementById('e-nombre').value=p.nombre;
+  document.getElementById('e-marca').value=p.marca;
+  document.getElementById('e-categoria').value=p.categoria;
+  document.getElementById('e-genero').value=p.genero||'Él';
+  document.getElementById('e-fragancia').value=p.fragancia||'';
+  document.getElementById('e-presentacion').value=p.presentacion||'100ml';
+  document.getElementById('e-inspirado').value=p.inspirado||'';
+  document.getElementById('e-descripcion').value=p.descripcion||'';
+  document.getElementById('e-ideal').value=p.ideal||'';
+  document.getElementById('e-stock').value=p.stock;
+  document.getElementById('e-costo').value=p.costoUnitario;
+  document.getElementById('e-pventa').value=p.precioVenta;
+  if(p.foto){document.getElementById('e-foto-preview').src=p.foto;document.getElementById('e-foto-preview').style.display='block';document.getElementById('e-foto-placeholder').style.display='none';}
+  else{document.getElementById('e-foto-preview').style.display='none';document.getElementById('e-foto-placeholder').style.display='flex';}
+  tempFoto.editar=undefined;
+  document.getElementById('btn-guardar-prod').onclick=guardarEdicion;
+  document.getElementById('modal-prod').classList.add('open');
+}
+
+function guardarEdicion(){
+  var id=parseInt(document.getElementById('e-id').value);
+  var p=D.productos.find(function(x){return x.id===id;});if(!p)return;
+  p.nombre=document.getElementById('e-nombre').value.trim()||p.nombre;
+  p.marca=document.getElementById('e-marca').value.trim();
+  p.categoria=document.getElementById('e-categoria').value;
+  p.genero=document.getElementById('e-genero').value;
+  p.fragancia=document.getElementById('e-fragancia').value;
+  p.presentacion=document.getElementById('e-presentacion').value.trim();
+  p.inspirado=document.getElementById('e-inspirado').value.trim();
+  p.descripcion=document.getElementById('e-descripcion').value.trim();
+  p.ideal=document.getElementById('e-ideal').value.trim();
+  var nuevoStock=parseInt(document.getElementById('e-stock').value)||0;
+  var diffStock=nuevoStock-p.stock;
+  if(diffStock!==0){p.stockInicial=Math.max(0,p.stockInicial+diffStock);}
+  p.stock=nuevoStock;
+  p.costoUnitario=parseFloat(document.getElementById('e-costo').value)||p.costoUnitario;
+  p.precioVenta=parseFloat(document.getElementById('e-pventa').value)||0;
+  var fotoEdit=tempFoto.editar;
+  if(fotoEdit!==undefined)p.foto=fotoEdit;
+  function terminar(){cerrarModal('modal-prod');poblarSelects();renderProductos();renderResumen();toast('✅ '+p.nombre+' actualizado');}
+  if(fotoEdit)saveConFoto(p.id,fotoEdit).then(terminar);
+  else{save();terminar();}
+}
+
+function archivar(id){
+  var p=D.productos.find(function(x){return x.id===id;});if(!p)return;
+  if(!confirm('¿Archivar "'+p.nombre+'"?'))return;
+  p.archivado=true;save();poblarSelects();renderProductos();renderResumen();toast('📦 '+p.nombre+' archivado');
+}
+
+// ── FOTOS ──
+function cargarFoto(e,tipo){
+  var file=e.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    tempFoto[tipo]=ev.target.result;
+    document.getElementById('e-foto-preview').src=ev.target.result;
+    document.getElementById('e-foto-preview').style.display='block';
+    document.getElementById('e-foto-placeholder').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function quitarFoto(tipo){
+  tempFoto[tipo]='';
+  document.getElementById('e-foto-preview').style.display='none';
+  document.getElementById('e-foto-placeholder').style.display='flex';
+}
+
+// ── VENTA ──
+function onSelectVenta(){
+  var id=parseInt(document.getElementById('v-producto').value);
+  var p=D.productos.find(function(x){return x.id===id;});
+  if(p){
+    document.getElementById('v-precio').value=p.precioVenta;
+    document.getElementById('v-info').style.display='block';
+    document.getElementById('v-info-text').textContent=p.nombre+' · '+p.marca+' · '+(p.genero||'')+' · Stock: '+p.stock;
+  }else{
+    document.getElementById('v-precio').value='';
+    document.getElementById('v-info').style.display='none';
+  }
+}
+
+function registrarVenta(){
+  var id=parseInt(document.getElementById('v-producto').value);
+  var p=D.productos.find(function(x){return x.id===id;});
+  if(!p){toast('⚠️ Selecciona un perfume');return;}
+  var cant=parseInt(document.getElementById('v-cantidad').value)||1;
+  if(cant>p.stock){toast('⚠️ Stock insuficiente ('+p.stock+' disponibles)');return;}
+  var ingreso=p.precioVenta*cant;
+  var costo=p.costoUnitario*cant;
+  D.ventas.push({id:Date.now(),productoId:p.id,productoNombre:p.nombre,marca:p.marca,categoria:p.categoria,cantidad:cant,precioVenta:p.precioVenta,costoUnitario:p.costoUnitario,ingreso:ingreso,costo:costo,ganancia:ingreso-costo,fecha:new Date().toISOString()});
+  p.stock-=cant;
+  save();poblarSelects();renderResumen();
+  document.getElementById('v-producto').value='';document.getElementById('v-precio').value='';document.getElementById('v-cantidad').value=1;document.getElementById('v-info').style.display='none';
+  toast('💰 Venta registrada: '+p.nombre+' x'+cant);
+}
+
+// ── HISTORIAL ──
+function renderHistorial(){
+  var html=D.ventas.slice().reverse().map(function(v){
+    var f=new Date(v.fecha);
+    return'<tr><td>'+f.toLocaleDateString('es-PE',{day:'2-digit',month:'short'})+'</td><td>'+v.productoNombre+'<br><span style="color:var(--text-dim);font-size:10px;">'+v.marca+'</span></td><td>'+v.cantidad+'</td><td style="color:var(--green);">'+fmt(v.ingreso)+'</td><td style="color:var(--gold);">'+fmt(v.ganancia)+'</td><td><button class="btn btn-ghost btn-sm" onclick="eliminarVenta('+v.id+')">🗑️</button></td></tr>';
+  }).join('');
+  document.getElementById('historial-body').innerHTML=html||'<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px;">Sin ventas registradas</td></tr>';
+}
+
+function eliminarVenta(id){
+  if(!confirm('¿Eliminar esta venta?'))return;
+  var v=D.ventas.find(function(x){return x.id===id;});
+  if(v){var p=D.productos.find(function(x){return x.id===v.productoId;});if(p)p.stock+=v.cantidad;}
+  D.ventas=D.ventas.filter(function(x){return x.id!==id;});
+  save();renderHistorial();renderResumen();toast('🗑️ Venta eliminada');
+}
+
+// ── CATEGORÍAS ──
+function renderCategorias(){
+  var counts={};activos().forEach(function(p){counts[p.categoria]=(counts[p.categoria]||0)+1;});
+  document.getElementById('cat-list').innerHTML=D.categorias.map(function(c){
+    return'<div class="cat-tag"><span>'+c+'</span><span class="cat-count">'+(counts[c]||0)+'</span><span class="cat-del" onclick="eliminarCat(\''+c.replace(/'/g,"\\'")+'\')">✕</span></div>';
+  }).join('');
+}
+function agregarCat(){
+  var nombre=document.getElementById('nueva-cat').value.trim().toUpperCase();
+  if(!nombre||D.categorias.includes(nombre))return;
+  D.categorias.push(nombre);save();renderCategorias();poblarSelects();
+  document.getElementById('nueva-cat').value='';toast('✅ Categoría agregada');
+}
+function eliminarCat(nombre){
+  if(!confirm('¿Eliminar categoría "'+nombre+'"?'))return;
+  D.categorias=D.categorias.filter(function(c){return c!==nombre;});
+  save();renderCategorias();poblarSelects();toast('🗑️ Categoría eliminada');
+}
+
+// ── RETIROS ──
+function abrirModalRetiro(){
+  document.getElementById('retiro-monto').value='';
+  document.getElementById('retiro-motivo').value='';
+  renderRetiroHistorial();
+  document.getElementById('modal-retiro').classList.add('open');
+}
+function registrarRetiro(){
+  var monto=parseFloat(document.getElementById('retiro-monto').value);
+  var motivo=document.getElementById('retiro-motivo').value.trim()||'Reinversión';
+  if(!monto||monto<=0){toast('⚠️ Monto inválido');return;}
+  if(!D.retiros)D.retiros=[];
+  D.retiros.push({id:Date.now(),monto:monto,motivo:motivo,fecha:new Date().toISOString()});
+  save();renderResumen();renderRetiroHistorial();
+  document.getElementById('retiro-monto').value='';document.getElementById('retiro-motivo').value='';
+  toast('💰 Retiro registrado: '+fmt(monto));
+}
+function eliminarRetiro(id){
+  if(!confirm('¿Eliminar retiro?'))return;
+  D.retiros=(D.retiros||[]).filter(function(r){return r.id!==id;});
+  save();renderResumen();renderRetiroHistorial();toast('🗑️ Retiro eliminado');
+}
+function renderRetiroHistorial(){
+  var wrap=document.getElementById('retiro-historial');
+  var retiros=D.retiros||[];
+  if(!retiros.length){wrap.innerHTML='<p style="color:#aaa;font-size:12px;text-align:center;padding:8px">Sin retiros</p>';return;}
+  var total=retiros.reduce(function(s,r){return s+r.monto;},0);
+  wrap.innerHTML='<div style="font-size:12px;color:#a07d2e;margin-bottom:6px;font-weight:600">Total reinvertido: '+fmt(total)+'</div><table style="color:#222;font-size:12px;"><thead><tr><th style="background:#f5f5f5;color:#555">Fecha</th><th style="background:#f5f5f5;color:#555">Motivo</th><th style="background:#f5f5f5;color:#555">Monto</th><th style="background:#f5f5f5"></th></tr></thead><tbody>'+retiros.slice().reverse().map(function(r){var f=new Date(r.fecha);return'<tr><td style="color:#888">'+f.toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'})+'</td><td style="color:#333">'+r.motivo+'</td><td style="font-weight:600;color:#c0392b">-'+fmt(r.monto)+'</td><td><button onclick="eliminarRetiro('+r.id+')" style="background:none;border:none;cursor:pointer;font-size:14px">🗑️</button></td></tr>';}).join('')+'</tbody></table>';
+}
+
+// ── BACKUP ──
+function exportarBackup(){
+  toast('⏳ Preparando backup...');
+  var promises=D.productos.map(function(p){return getFoto(p.id).then(function(f){return{id:p.id,foto:f};});});
+  Promise.all(promises).then(function(fotos){
+    var productosConFotos=D.productos.map(function(p){var c=Object.assign({},p);var match=fotos.find(function(f){return f.id===p.id;});if(match&&match.foto)c.foto=match.foto;return c;});
+    var datos={version:2,fechaExport:new Date().toISOString(),categorias:D.categorias,productos:productosConFotos,ventas:D.ventas,retiros:D.retiros||[]};
+    var blob=new Blob([JSON.stringify(datos)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    var fecha=new Date().toISOString().slice(0,10);
+    a.download='RSCollection_backup_'+fecha+'.json';a.click();
+    toast('✅ Backup descargado');
+  });
+}
+
+function importarBackup(e){
+  var file=e.target.files[0];if(!file)return;
+  var status=document.getElementById('backup-status');
+  status.innerHTML='<span style="color:var(--gold)">⏳ Procesando...</span>';
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var datos=JSON.parse(ev.target.result);
+      if(!datos.categorias||!datos.productos||!datos.ventas){status.innerHTML='<span style="color:var(--red)">❌ Archivo inválido</span>';return;}
+      D.categorias=datos.categorias;D.productos=datos.productos;D.ventas=datos.ventas;D.retiros=datos.retiros||[];
+      save();
+      var fotoPromises=datos.productos.filter(function(p){return p.foto;}).map(function(p){return saveConFoto(p.id,p.foto);});
+      Promise.all(fotoPromises).then(function(){
+        renderResumen();renderCategorias();poblarSelects();renderProductos();
+        status.innerHTML='<span style="color:var(--green)">✅ Restaurado: '+datos.productos.length+' perfumes, '+datos.ventas.length+' ventas</span>';
+        toast('✅ Backup restaurado');
+      });
+    }catch(err){status.innerHTML='<span style="color:var(--red)">❌ Error: '+err.message+'</span>';}
+  };
+  reader.readAsText(file);
+}
+
+function resetearTodo(){
+  if(!confirm('⚠️ ¿BORRAR TODO? Esta acción es irreversible.'))return;
+  if(!confirm('¿Estás completamente seguro?'))return;
+  localStorage.removeItem('rs_cats');localStorage.removeItem('rs_prods');localStorage.removeItem('rs_ventas');localStorage.removeItem('rs_retiros');
+  if(fotoDb){var tx=fotoDb.transaction('fotos','readwrite');tx.objectStore('fotos').clear();}
+  D=load();renderResumen();renderCategorias();poblarSelects();renderProductos();
+  toast('🗑️ Datos eliminados');
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){cerrarModal('modal-prod');cerrarModal('modal-retiro');}});
+['modal-prod','modal-retiro'].forEach(function(id){document.getElementById(id).addEventListener('click',function(e){if(e.target===this)cerrarModal(id);});});
+
+// ── INIT ──
+function arrancar(){poblarSelects();renderResumen();renderProductos();}
+abrirFotoDB().then(function(){return inyectarFotos();}).then(function(){arrancar();}).catch(function(){arrancar();});
+</script>
+</body>
+</html>
